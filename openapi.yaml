@@ -1,0 +1,1260 @@
+openapi: 3.0.3
+info:
+  title: Event Planner API
+  description: API para gestión de eventos, actividades, inscripciones, asistencias y usuarios.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:3000/api
+security:
+  - bearerAuth: []
+paths:
+  /auth/register:
+    post:
+      summary: Registrar usuario
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedResponse'
+
+  /auth/login:
+    post:
+      summary: Login
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: Tokens de autenticación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+
+  /auth/refresh:
+    post:
+      summary: Renovar access token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token renovado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+
+  /auth/profile:
+    get:
+      summary: Obtener perfil del usuario autenticado
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+
+  /empresas:
+    get:
+      summary: Listar empresas
+      tags: [Empresas]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: incluir_pendientes
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Lista de empresas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmpresaList'
+    post:
+      summary: Crear empresa
+      tags: [Empresas]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmpresaCreate'
+      responses:
+        '201':
+          description: Empresa creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmpresaResponse'
+
+  /empresas/pendientes:
+    get:
+      summary: Empresas pendientes
+      tags: [Empresas]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Pendientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Empresa'
+
+  /empresas/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener empresa por id
+      tags: [Empresas]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Empresa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmpresaResponse'
+    put:
+      summary: Actualizar empresa
+      tags: [Empresas]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmpresaCreate'
+      responses:
+        '200':
+          description: Empresa actualizada
+    delete:
+      summary: Eliminar empresa
+      tags: [Empresas]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Empresa eliminada
+
+  /paises:
+    get:
+      summary: Listar países
+      tags: [Paises]
+      responses:
+        '200':
+          description: Lista países
+    post:
+      summary: Crear país
+      tags: [Paises]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pais'
+      responses:
+        '201':
+          description: País creado
+
+  /paises/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener país
+      tags: [Paises]
+      responses:
+        '200':
+          description: País
+    put:
+      summary: Actualizar país
+      tags: [Paises]
+      responses:
+        '200':
+          description: País actualizado
+    delete:
+      summary: Eliminar país
+      tags: [Paises]
+      responses:
+        '200':
+          description: País eliminado
+    
+
+  /ciudades:
+    get:
+      summary: Listar ciudades
+      tags: [Ciudades]
+      responses:
+        '200':
+          description: Lista ciudades
+    post:
+      summary: Crear ciudad
+      tags: [Ciudades]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ciudad'
+      responses:
+        '201':
+          description: Ciudad creada
+
+  /ciudades/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener ciudad
+      tags: [Ciudades]
+      responses:
+        '200':
+          description: Ciudad obtenida
+    put:
+      summary: Actualizar ciudad
+      tags: [Ciudades]
+      responses:
+        '200':
+          description: Ciudad actualizada
+    delete:
+      summary: Eliminar ciudad
+      tags: [Ciudades]
+      responses:
+        '200':
+          description: Ciudad eliminada
+
+  /gestion-usuarios:
+    get:
+      summary: Listar usuarios (admin)
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista usuarios
+    post:
+      summary: Crear usuario por admin
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Usuario creado
+
+  /gestion-usuarios/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener usuario completo
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Usuario obtenido
+    put:
+      summary: Actualizar datos de usuario (perfil/rol)
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Usuario actualizado
+
+  /auditoria:
+    get:
+      summary: Obtener registros de auditoría
+      tags: [Auditoria]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tipo
+          in: query
+          schema:
+            type: string
+        - name: accion
+          in: query
+          schema:
+            type: string
+        - name: limite
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Registros de auditoría
+
+  /eventos:
+    post:
+      summary: Crear evento
+      tags: [Eventos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventoCreate'
+      responses:
+        '201':
+          description: Evento creado
+    get:
+      summary: Listar eventos
+      tags: [Eventos]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de eventos
+      parameters:
+        - name: id_empresa
+          in: query
+          schema:
+            type: integer
+        - name: estado
+          in: query
+          schema:
+            type: string
+        - name: modalidad
+          in: query
+          schema:
+            type: string
+
+  /eventos/{eventoId}:
+    parameters:
+      - name: eventoId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener evento por id
+      tags: [Eventos]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Evento obtenido
+    put:
+      summary: Actualizar evento
+      tags: [Eventos]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Evento actualizado
+    delete:
+      summary: Cancelar evento
+      tags: [Eventos]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Evento cancelado
+
+  /eventos/{eventoId}/actividades:
+    parameters:
+      - name: eventoId
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      summary: Crear actividad en evento
+      tags: [Actividades]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActividadCreate'
+      responses:
+        '201':
+          description: Actividad creada
+    get:
+      summary: Listar actividades de evento
+      tags: [Actividades]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de actividades
+
+  /eventos/{eventoId}/actividades/{actividadId}:
+    parameters:
+      - name: eventoId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: actividadId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener actividad por id
+      tags: [Actividades]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Actividad obtenida
+    put:
+      summary: Actualizar actividad
+      tags: [Actividades]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActividadUpdate'
+      responses:
+        '200':
+          description: Actividad actualizada
+    delete:
+      summary: Eliminar actividad
+      tags: [Actividades]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Actividad eliminada
+
+  /empresas/{empresaId}/lugares:
+    parameters:
+      - name: empresaId
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      summary: Crear lugar para empresa
+      tags: [Lugares]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LugarCreate'
+      responses:
+        '201':
+          description: Lugar creado
+    get:
+      summary: Listar lugares de empresa
+      tags: [Lugares]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de lugares
+
+  /lugares/{lugarId}:
+    parameters:
+      - name: lugarId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener lugar por id
+      tags: [Lugares]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lugar obtenido
+    put:
+      summary: Actualizar lugar
+      tags: [Lugares]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lugar actualizado
+    delete:
+      summary: Eliminar lugar
+      tags: [Lugares]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lugar eliminado
+
+  /empresas/{empresaId}/ubicaciones:
+    parameters:
+      - name: empresaId
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      summary: Crear ubicacion para empresa
+      tags: [Ubicaciones]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UbicacionCreate'
+      responses:
+        '201':
+          description: Ubicación creada
+    get:
+      summary: Listar ubicaciones
+      tags: [Ubicaciones]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de ubicaciones
+
+  /ubicaciones/{ubicacionId}:
+    parameters:
+      - name: ubicacionId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener ubicacion
+      tags: [Ubicaciones]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Ubicación obtenida
+    put:
+      summary: Actualizar ubicacion
+      tags: [Ubicaciones]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Ubicación actualizada
+    delete:
+      summary: Eliminar ubicacion
+      tags: [Ubicaciones]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Ubicación eliminada
+
+  /inscripciones/eventos-disponibles:
+    get:
+      summary: Eventos disponibles para inscripción
+      tags: [Inscripciones]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: modalidad
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Eventos disponibles
+
+  /inscripciones:
+    post:
+      summary: Inscribir usuario en evento
+      tags: [Inscripciones]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_evento:
+                  type: integer
+      responses:
+        '201':
+          description: Inscripción creada
+
+  /inscripciones/mis-inscripciones:
+    get:
+      summary: Obtener inscripciones del usuario
+      tags: [Inscripciones]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Inscripciones del usuario
+
+  /inscripciones/inscribir-equipo:
+    post:
+      summary: Inscribir equipo (gerente/organizador)
+      tags: [Inscripciones]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_evento:
+                  type: integer
+                cedulas:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Resultados de inscripción en lote
+
+  /inscripciones/confirmar/{codigo}:
+    get:
+      summary: Confirmar inscripción por código (HTML)
+      tags: [Inscripciones]
+      parameters:
+        - name: codigo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Página HTML de confirmación
+
+  /asistencias:
+    post:
+      summary: Registrar asistencia por id_inscripcion
+      tags: [Asistencias]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_inscripcion:
+                  type: integer
+      responses:
+        '201':
+          description: Asistencia registrada
+
+  /asistencias/codigo:
+    post:
+      summary: Registrar asistencia por codigo
+      tags: [Asistencias]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                codigo:
+                  type: string
+      responses:
+        '201':
+          description: Asistencia registrada por código
+
+  /asistencias/mis-asistencias:
+    get:
+      summary: Obtener asistencias del usuario
+      tags: [Asistencias]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de asistencias
+
+  /asistencias/evento/{id_evento}:
+    get:
+      summary: Obtener asistencias de un evento
+      tags: [Asistencias]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_evento
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: fecha
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Inscripciones y asistencias del evento
+
+  /ponente-actividad:
+    post:
+      summary: Asignar ponente a actividad
+      tags: [PonenteActividad]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_ponente:
+                  type: integer
+                id_actividad:
+                  type: integer
+      responses:
+        '201':
+          description: Asignación creada
+
+  /ponente-actividad/actividad/{actividadId}:
+    parameters:
+      - name: actividadId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener asignaciones por actividad
+      tags: [PonenteActividad]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de asignaciones por actividad
+
+  /ponente-actividad/ponente/{ponenteId}:
+    parameters:
+      - name: ponenteId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener asignaciones por ponente
+      tags: [PonenteActividad]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de asignaciones por ponente
+
+  /ponente-actividad/ponentes:
+    get:
+      summary: Obtener ponentes disponibles
+      tags: [PonenteActividad]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de ponentes disponibles
+
+  /ponente-actividad/{ponenteId}/{actividadId}/responder-invitacion:
+    parameters:
+      - name: ponenteId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: actividadId
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      summary: Responder invitación (ponente)
+      tags: [PonenteActividad]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                aceptar:
+                  type: boolean
+                motivo_rechazo:
+                  type: string
+      responses:
+        '200':
+          description: Respuesta registrada
+
+  /notificaciones/mis-notificaciones:
+    get:
+      summary: Obtener notificaciones del usuario
+      tags: [Notificaciones]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estado
+          in: query
+          schema:
+            type: string
+        - name: entidad_tipo
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de notificaciones
+
+  /notificaciones/{notificacionId}:
+    parameters:
+      - name: notificacionId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener notificación por id
+      tags: [Notificaciones]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notificación obtenida
+    put:
+      summary: Marcar notificación como leída
+      tags: [Notificaciones]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Marcada
+    delete:
+      summary: Eliminar notificación
+      tags: [Notificaciones]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notificación eliminada
+
+  /encuestas:
+    post:
+      summary: Crear encuesta
+      tags: [Encuestas]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EncuestaCreate'
+      responses:
+        '201':
+          description: Encuesta creada
+    get:
+      summary: Obtener encuestas
+      tags: [Encuestas]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de encuestas
+
+  /encuestas/{encuestaId}:
+    parameters:
+      - name: encuestaId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener encuesta
+      tags: [Encuestas]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Encuesta obtenida
+    put:
+      summary: Actualizar encuesta
+      tags: [Encuestas]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Encuesta actualizada
+    delete:
+      summary: Eliminar encuesta
+      tags: [Encuestas]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Encuesta eliminada
+
+  /encuestas/{encuestaId}/enviar:
+    parameters:
+      - name: encuestaId
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      summary: Enviar encuesta
+      tags: [Encuestas]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Encuesta enviada
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    UserRegister:
+      type: object
+      required: [nombre, cedula, correo, contraseña]
+      properties:
+        nombre:
+          type: string
+        cedula:
+          type: string
+        telefono:
+          type: string
+        correo:
+          type: string
+          format: email
+        contraseña:
+          type: string
+        rol:
+          type: string
+        especialidad:
+          type: string
+
+    UserLogin:
+      type: object
+      required: [correo, contraseña]
+      properties:
+        correo:
+          type: string
+        contraseña:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            usuario:
+              type: object
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+
+    ProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            usuario:
+              type: object
+
+    CreatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+
+    Empresa:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        nit:
+          type: string
+        estado:
+          type: string
+
+    EmpresaCreate:
+      type: object
+      required: [nombre, nit]
+      properties:
+        nombre:
+          type: string
+        nit:
+          type: string
+        direccion:
+          type: string
+        telefono:
+          type: string
+
+    EmpresaResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Empresa'
+
+    EmpresaList:
+      type: object
+      properties:
+        success:
+          type: boolean
+        total:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Empresa'
+
+    Pais:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+        codigo_iso:
+          type: string
+
+    Ciudad:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+        id_pais:
+          type: integer
+
+    UserCreate:
+      type: object
+      properties:
+        nombre:
+          type: string
+        cedula:
+          type: string
+        telefono:
+          type: string
+        correo:
+          type: string
+        contraseña:
+          type: string
+        rol:
+          type: string
+        roleData:
+          type: object
+
+    EventoCreate:
+      type: object
+      required: [titulo, fecha_inicio, fecha_fin]
+      properties:
+        titulo:
+          type: string
+        descripcion:
+          type: string
+        modalidad:
+          type: string
+        fecha_inicio:
+          type: string
+          format: date
+        fecha_fin:
+          type: string
+          format: date
+        id_empresa:
+          type: integer
+
+    ActividadCreate:
+      type: object
+      required: [titulo, fecha_actividad, hora_inicio, hora_fin]
+      properties:
+        titulo:
+          type: string
+        descripcion:
+          type: string
+        fecha_actividad:
+          type: string
+          format: date
+        hora_inicio:
+          type: string
+        hora_fin:
+          type: string
+        lugares:
+          type: array
+          items:
+            type: integer
+        ponentes:
+          type: array
+          items:
+            type: integer
+
+    ActividadUpdate:
+      type: object
+      properties:
+        titulo:
+          type: string
+        descripcion:
+          type: string
+        fecha_actividad:
+          type: string
+          format: date
+        hora_inicio:
+          type: string
+        hora_fin:
+          type: string
+        lugares:
+          type: array
+          items:
+            type: integer
+        ponentes:
+          type: array
+          items:
+            type: integer
+
+    LugarCreate:
+      type: object
+      required: [nombre, id_ubicacion]
+      properties:
+        nombre:
+          type: string
+        descripcion:
+          type: string
+        id_ubicacion:
+          type: integer
+        capacidad:
+          type: integer
+
+    UbicacionCreate:
+      type: object
+      required: [direccion, id_ciudad]
+      properties:
+        lugar:
+          type: string
+        direccion:
+          type: string
+        descripcion:
+          type: string
+        id_ciudad:
+          type: integer
+
+    EncuestaCreate:
+      type: object
+      required: [titulo, preguntas]
+      properties:
+        id_evento:
+          type: integer
+        id_actividad:
+          type: integer
+        titulo:
+          type: string
+        preguntas:
+          type: array
+          items:
+            type: object
+
+    Inscripcion:
+      type: object
+      properties:
+        id:
+          type: integer
+        codigo:
+          type: string
+
+    Notificacion:
+      type: object
+      properties:
+        id:
+          type: integer
+        titulo:
+          type: string
+        mensaje:
+          type: string
+        leida:
+          type: boolean
