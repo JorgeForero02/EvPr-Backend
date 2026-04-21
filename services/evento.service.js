@@ -170,7 +170,7 @@ class EventoService {
         return evento;
     }
 
-    construirFiltros({ id, id_empresa, estado, modalidad, rol, empresaUsuario }) {
+    construirFiltros({ id, id_empresa, estado, modalidad, rol, empresaUsuario, fecha_desde, fecha_hasta }) {
         const where = {};
         if (id) where.id = id;
 
@@ -196,6 +196,13 @@ class EventoService {
         }
 
         if (modalidad) where.modalidad = modalidad;
+
+        if (fecha_desde || fecha_hasta) {
+            where.fecha_inicio = {};
+            if (fecha_desde) where.fecha_inicio[Op.gte] = new Date(fecha_desde);
+            if (fecha_hasta) where.fecha_inicio[Op.lte] = new Date(fecha_hasta);
+        }
+
         return where;
     }
 

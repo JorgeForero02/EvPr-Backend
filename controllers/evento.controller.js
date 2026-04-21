@@ -82,13 +82,15 @@ class EventoController {
 
     async obtenerEventos(req, res) {
         try {
-            const { id_empresa, estado, modalidad } = req.query;
+            const { id_empresa, estado, modalidad, fecha_desde, fecha_hasta } = req.query;
             const usuario = req.usuario;
 
             const whereClause = EventoService.construirFiltros({
                 id_empresa,
                 estado,
                 modalidad,
+                fecha_desde,
+                fecha_hasta,
                 rol: usuario.rol,
                 empresaUsuario: usuario.rolData?.id_empresa
             });
