@@ -6,6 +6,7 @@ const { auth, isAdministrador } = require('../middlewares/auth');
 
 // RF10/RF13 — Estadísticas del dashboard del administrador
 router.get('/dashboard/stats', auth, isAdministrador, AdminController.obtenerDashboardStats);
+router.get('/dashboard/metricas-agregadas', auth, isAdministrador, AdminController.obtenerMetricasAgregadas);
 router.get('/dashboard/exportar-csv', auth, isAdministrador, AdminController.exportarDashboardCSV);
 
 // B4: Gestión de roles del sistema

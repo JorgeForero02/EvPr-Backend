@@ -301,6 +301,129 @@ class AdminController {
             return res.status(500).json({ success: false, message: 'Error al exportar CSV' });
         }
     }
+
+    // RF10 — Métricas agregadas por empresa y tipo de evento
+    async obtenerMetricasAgregadas(req, res) {
+        try {
+            const [porEmpresa] = await sequelize.query(`
+                SELECT
+                    e.id   AS empresa_id,
+                    e.nombre AS empresa_nombre,
+                    COUNT(DISTINCT ev.id)                             AS total_eventos,
+                    COALESCE(SUM(insc.total_inscripciones), 0)        AS total_inscripciones,
+                    COALESCE(SUM(insc.inscripciones_confirmadas), 0)  AS inscripciones_confirmadas,
+                    COALESCE(SUM(asist.total_asistencias), 0)         AS total_asistencias,
+                    COALESCE(SUM(enc_d.encuestas_enviadas), 0)        AS encuestas_enviadas,
+                    COALESCE(SUM(enc_d.encuestas_respondidas), 0)     AS encuestas_respondidas,
+                    COALESCE(SUM(enc_d.satisfaccion_enviadas), 0)     AS satisfaccion_enviadas,
+                    COALESCE(SUM(enc_d.satisfaccion_respondidas), 0)  AS satisfaccion_respondidas
+                FROM Empresa e
+                LEFT JOIN Evento ev ON ev.id_empresa = e.id
+                LEFT JOIN (
+                    SELECT id_evento,
+                           COUNT(*)                          AS total_inscripciones,
+                           SUM(estado = 'Confirmada')        AS inscripciones_confirmadas
+                    FROM Inscripcion
+                    GROUP BY id_evento
+                ) insc ON insc.id_evento = ev.id
+                LEFT JOIN (
+                    SELECT i.id_evento, COUNT(a.id) AS total_asistencias
+                    FROM Inscripcion i
+                    JOIN Asistencia a ON a.inscripcion = i.id
+                    GROUP BY i.id_evento
+                ) asist ON asist.id_evento = ev.id
+                LEFT JOIN (
+                    SELECT enc.id_evento,
+                           COUNT(re.id)                                                      AS encuestas_enviadas,
+                           SUM(re.estado = 'completada')                                     AS encuestas_respondidas,
+                           SUM(enc.tipo_encuesta = 'satisfaccion_evento')                    AS satisfaccion_enviadas,
+                           SUM(enc.tipo_encuesta = 'satisfaccion_evento' AND re.estado = 'completada') AS satisfaccion_respondidas
+                    FROM Encuesta enc
+                    JOIN RespuestaEncuesta re ON re.id_encuesta = enc.id
+                    GROUP BY enc.id_evento
+                ) enc_d ON enc_d.id_evento = ev.id
+                GROUP BY e.id, e.nombre
+                ORDER BY e.nombre
+            `);
+
+            const [porModalidad] = await sequelize.query(`
+                SELECT
+                    ev.modalidad,
+                    COUNT(DISTINCT ev.id)                             AS total_eventos,
+                    COALESCE(SUM(insc.total_inscripciones), 0)        AS total_inscripciones,
+                    COALESCE(SUM(insc.inscripciones_confirmadas), 0)  AS inscripciones_confirmadas,
+                    COALESCE(SUM(asist.total_asistencias), 0)         AS total_asistencias,
+                    COALESCE(SUM(enc_d.encuestas_enviadas), 0)        AS encuestas_enviadas,
+                    COALESCE(SUM(enc_d.encuestas_respondidas), 0)     AS encuestas_respondidas,
+                    COALESCE(SUM(enc_d.satisfaccion_enviadas), 0)     AS satisfaccion_enviadas,
+                    COALESCE(SUM(enc_d.satisfaccion_respondidas), 0)  AS satisfaccion_respondidas
+                FROM Evento ev
+                LEFT JOIN (
+                    SELECT id_evento,
+                           COUNT(*)                          AS total_inscripciones,
+                           SUM(estado = 'Confirmada')        AS inscripciones_confirmadas
+                    FROM Inscripcion
+                    GROUP BY id_evento
+                ) insc ON insc.id_evento = ev.id
+                LEFT JOIN (
+                    SELECT i.id_evento, COUNT(a.id) AS total_asistencias
+                    FROM Inscripcion i
+                    JOIN Asistencia a ON a.inscripcion = i.id
+                    GROUP BY i.id_evento
+                ) asist ON asist.id_evento = ev.id
+                LEFT JOIN (
+                    SELECT enc.id_evento,
+                           COUNT(re.id)                                                      AS encuestas_enviadas,
+                           SUM(re.estado = 'completada')                                     AS encuestas_respondidas,
+                           SUM(enc.tipo_encuesta = 'satisfaccion_evento')                    AS satisfaccion_enviadas,
+                           SUM(enc.tipo_encuesta = 'satisfaccion_evento' AND re.estado = 'completada') AS satisfaccion_respondidas
+                    FROM Encuesta enc
+                    JOIN RespuestaEncuesta re ON re.id_encuesta = enc.id
+                    GROUP BY enc.id_evento
+                ) enc_d ON enc_d.id_evento = ev.id
+                GROUP BY ev.modalidad
+                ORDER BY ev.modalidad
+            `);
+
+            const toNum = v => Number(v) || 0;
+            const calcTasa = (num, den) => den > 0 ? Math.round((num / den) * 100) : 0;
+
+            const mapRow = row => ({
+                total_eventos:               toNum(row.total_eventos),
+                total_inscripciones:         toNum(row.total_inscripciones),
+                inscripciones_confirmadas:   toNum(row.inscripciones_confirmadas),
+                total_asistencias:           toNum(row.total_asistencias),
+                tasa_asistencia:             calcTasa(toNum(row.total_asistencias), toNum(row.inscripciones_confirmadas)),
+                encuestas_enviadas:          toNum(row.encuestas_enviadas),
+                encuestas_respondidas:       toNum(row.encuestas_respondidas),
+                tasa_respuesta_encuestas:    calcTasa(toNum(row.encuestas_respondidas), toNum(row.encuestas_enviadas)),
+                satisfaccion_enviadas:       toNum(row.satisfaccion_enviadas),
+                satisfaccion_respondidas:    toNum(row.satisfaccion_respondidas),
+                tasa_satisfaccion:           calcTasa(toNum(row.satisfaccion_respondidas), toNum(row.satisfaccion_enviadas)),
+            });
+
+            return res.json({
+                success: true,
+                data: {
+                    por_empresa: porEmpresa.map(row => ({
+                        empresa_id:     row.empresa_id,
+                        empresa_nombre: row.empresa_nombre,
+                        ...mapRow(row)
+                    })),
+                    por_modalidad: porModalidad.map(row => ({
+                        modalidad: row.modalidad,
+                        ...mapRow(row)
+                    }))
+                }
+            });
+        } catch (error) {
+            console.error('Error al obtener métricas agregadas:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Error al obtener métricas agregadas'
+            });
+        }
+    }
 }
 
 module.exports = new AdminController();
