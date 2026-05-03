@@ -67,7 +67,8 @@ db.sequelize.authenticate()
     
     if (process.env.NODE_ENV !== 'production') {
 
-      return db.sequelize.sync();
+      //return db.sequelize.sync({ alter: true });
+      return db.sequelize.sync({});
     }
   })
   .then(() => {

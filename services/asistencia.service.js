@@ -1,4 +1,4 @@
-const { Asistencia, Inscripcion, Evento, Asistente, Usuario, Actividad } = require('../models');
+const { Asistencia, Inscripcion, Evento, Asistente, Usuario, Actividad, Lugar } = require('../models');
 const sequelize = require('../config/database');
 
 class AsistenciaService {
@@ -88,12 +88,18 @@ class AsistenciaService {
                 {
                     model: Evento,
                     as: 'evento',
-                    attributes: ['id', 'titulo', 'fecha_inicio', 'fecha_fin', 'modalidad', 'hora', 'lugar'],
+                    attributes: ['id', 'titulo', 'fecha_inicio', 'fecha_fin', 'modalidad', 'hora', 'lugar_id'],
                     include: [
                         {
                             model: Actividad,
                             as: 'actividades',
                             attributes: ['id_actividad', 'titulo', 'descripcion', 'hora_inicio', 'hora_fin', 'fecha_actividad']
+                        },
+                        {
+                            model: Lugar,
+                            as: 'lugar',
+                            attributes: ['id', 'nombre'],
+                            required: false
                         }
                     ]
                 },
