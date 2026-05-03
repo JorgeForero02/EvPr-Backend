@@ -49,13 +49,17 @@ const Empresa = sequelize.define('Empresa', {
     allowNull: false,
     defaultValue: 0  
   },
-  id_creador: { 
+  id_creador: {
     type: DataTypes.INTEGER,
     allowNull: true,
     references: {
       model: 'Usuario',
       key: 'id'
     }
+  },
+  motivo_rechazo: {
+    type: DataTypes.TEXT,
+    allowNull: true
   }
 }, {
   tableName: 'Empresa',

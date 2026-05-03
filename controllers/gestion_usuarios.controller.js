@@ -32,10 +32,10 @@ class GestionUsuariosController {
     async updateProfile(req, res, next) {
         try {
             const { id } = req.params;
-            const { nombre, telefono, cedula } = req.body;
+            const { nombre, telefono, cedula, correo } = req.body;
 
             const validacion = await UsuarioValidator.validarActualizacionPerfil(
-                { nombre, telefono, cedula },
+                { nombre, telefono, cedula, correo },
                 id
             );
 
@@ -46,7 +46,8 @@ class GestionUsuariosController {
             const resultado = await UsuarioService.actualizarPerfil(id, {
                 nombre,
                 telefono,
-                cedula
+                cedula,
+                correo
             });
 
             if (!resultado.exito) {
@@ -160,12 +161,14 @@ class GestionUsuariosController {
 
     async getAllUsersComplete(req, res, next) {
         try {
-            const { nombre, correo, rol, estado } = req.query;
+            const { nombre, correo, rol, estado, limit, offset } = req.query;
             const filtros = {};
             if (nombre) filtros.nombre = nombre;
             if (correo) filtros.correo = correo;
             if (rol) filtros.rol = rol;
             if (estado !== undefined) filtros.estado = estado;
+            if (limit) filtros.limit = limit;
+            if (offset) filtros.offset = offset;
 
             const usuarios = await UsuarioService.obtenerTodosCompletos(filtros);
 

@@ -78,9 +78,16 @@ class InscripcionController {
             const { id_evento, cedulas = [] } = req.body;
             const gerente = req.usuario;
 
+            const MAX_CEDULAS = 100;
+            if (!Array.isArray(cedulas) || cedulas.length > MAX_CEDULAS) {
+                await transaction.rollback();
+                return ApiResponse.error(res, `Se pueden inscribir máximo ${MAX_CEDULAS} usuarios por solicitud`, 400);
+            }
+
             const validacion = InscripcionValidator.validarInscripcionEquipo(id_evento, cedulas);
 
             if (!validacion.esValida) {
+                await transaction.rollback();
                 return ApiResponse.error(res, validacion.mensaje, 400);
             }
 

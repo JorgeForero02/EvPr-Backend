@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const { Op } = require('sequelize');
+const EmailService = require('./emailService');
 const {
     Inscripcion,
     Asistente,
@@ -115,6 +116,14 @@ class InscripcionService {
             };
         }
 
+        if (fechaHoy > evento.fecha_inicio) {
+            return {
+                exito: false,
+                mensaje: 'No es posible inscribirse a un evento que ya ha iniciado',
+                codigoEstado: 400
+            };
+        }
+
         const inscripcionExistente = await Inscripcion.findOne({
             where: { id_asistente: asistente.id_asistente, id_evento: eventoId },
             transaction
@@ -226,6 +235,14 @@ class InscripcionService {
                 exito: false,
                 mensaje: MENSAJES.EVENTO_FINALIZADO,
                 codigoEstado: 400
+            };
+        }
+
+        if (!gerente.rolData?.id_empresa) {
+            return {
+                exito: false,
+                mensaje: MENSAJES.SOLO_EVENTOS_PROPIA_EMPRESA,
+                codigoEstado: 403
             };
         }
 

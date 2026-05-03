@@ -1,6 +1,7 @@
 ﻿const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 const setupSwagger = require('./config/swagger');
 const { programarRecordatorios } = require('./cron/recordatorios.cron');
@@ -15,6 +16,26 @@ setupSwagger(app);
 
 
 app.use(helmet());
+
+const limiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 60,
+    message: { success: false, message: 'Demasiadas solicitudes. Intenta en 1 minuto.' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+const limiterCreacion = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: { success: false, message: 'Demasiadas solicitudes de creación. Intenta en 1 minuto.' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+app.use('/api', limiter);
+app.use('/api/eventos', limiterCreacion);
+app.use('/api/inscripciones', limiterCreacion);
 
 const corsOptions = {
   origin: process.env.FRONTEND_URL || 'https://eventplanner.up.railway.app',

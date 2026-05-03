@@ -9,8 +9,16 @@ class PresupuestoController {
             const { id_actividad, concepto, monto, tipo, descripcion } = req.body;
             const usuario = req.usuario;
 
-            if (!concepto || !monto || !tipo) {
+            if (!concepto || monto === undefined || monto === null || !tipo) {
                 return ApiResponse.error(res, 'concepto, monto y tipo son obligatorios', 400);
+            }
+
+            const montoNum = Number(monto);
+            if (isNaN(montoNum) || montoNum < 0) {
+                return ApiResponse.error(res, 'monto debe ser un número positivo o cero', 400);
+            }
+            if (montoNum > 999999999.99) {
+                return ApiResponse.error(res, 'monto excede el límite máximo permitido', 400);
             }
 
             if (!['ingreso', 'gasto'].includes(tipo)) {

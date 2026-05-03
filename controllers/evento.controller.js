@@ -207,6 +207,22 @@ class EventoController {
                 return res.status(400).json({ success: false, message: errCapacidadUpd.mensaje });
             }
 
+            if (req.body.cupos !== undefined) {
+                const { Inscripcion } = require('../models');
+                const { ESTADOS: EST_INSC } = require('../constants/inscripcion.constants');
+                const inscritosCount = await Inscripcion.count({
+                    where: { id_evento: eventoActualizado.id, estado: EST_INSC.CONFIRMADA },
+                    transaction
+                });
+                if (req.body.cupos < inscritosCount) {
+                    await transaction.rollback();
+                    return res.status(409).json({
+                        success: false,
+                        message: `No se pueden reducir los cupos a ${req.body.cupos}. Hay ${inscritosCount} inscritos confirmados.`
+                    });
+                }
+            }
+
             const actualizaciones = EventoService.construirActualizaciones(req.body);
 
             await eventoActualizado.update(actualizaciones, { transaction });

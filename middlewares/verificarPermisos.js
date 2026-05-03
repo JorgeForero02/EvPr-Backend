@@ -9,6 +9,13 @@ const verificarPermisoEvento = async (req, res, next) => {
         const usuarioId = req.usuario.id;
         const empresaId = req.body.id_empresa;
 
+        if (!empresaId) {
+            return res.status(400).json({
+                success: false,
+                message: 'El campo id_empresa es requerido'
+            });
+        }
+
         // Obtener info del admin de empresa
         const adminEmpresa = await AdministradorEmpresa.findOne({
             where: {

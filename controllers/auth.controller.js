@@ -72,7 +72,6 @@ class AuthController {
             return res.status(CODIGOS_HTTP.ERROR_INTERNO).json({
                 success: false,
                 message: MENSAJES.ERROR_SERVIDOR,
-                error: error.message
             });
         }
     }
@@ -134,7 +133,6 @@ class AuthController {
             return res.status(CODIGOS_HTTP.ERROR_INTERNO).json({
                 success: false,
                 message: MENSAJES.ERROR_SERVIDOR,
-                error: error.message
             });
         }
     }
@@ -221,7 +219,6 @@ class AuthController {
             return res.status(CODIGOS_HTTP.ERROR_INTERNO).json({
                 success: false,
                 message: MENSAJES.ERROR_SERVIDOR,
-                error: error.message
             });
         }
     }
@@ -273,7 +270,6 @@ class AuthController {
             return res.status(CODIGOS_HTTP.ERROR_INTERNO).json({
                 success: false,
                 message: MENSAJES.ERROR_SERVIDOR,
-                error: error.message
             });
         }
     }
@@ -340,7 +336,6 @@ class AuthController {
             return res.status(CODIGOS_HTTP.ERROR_INTERNO).json({
                 success: false,
                 message: MENSAJES.ERROR_SERVIDOR,
-                error: error.message
             });
         }
     }
@@ -375,7 +370,6 @@ class AuthController {
             return res.status(CODIGOS_HTTP.ERROR_INTERNO).json({
                 success: false,
                 message: MENSAJES.ERROR_SERVIDOR,
-                error: error.message
             });
         }
     }
@@ -409,7 +403,6 @@ class AuthController {
             return res.status(CODIGOS_HTTP.ERROR_INTERNO).json({
                 success: false,
                 message: MENSAJES.ERROR_SERVIDOR,
-                error: error.message
             });
         }
     }

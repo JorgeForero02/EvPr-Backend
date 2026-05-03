@@ -11,10 +11,18 @@ class EmpresaValidator {
             };
         }
 
-        if (!nit || nit.trim().length < 5) {
+        if (!nit) {
             return {
                 esValida: false,
                 mensaje: MENSAJES_VALIDACION.NIT_REQUERIDO
+            };
+        }
+
+        const NIT_REGEX = /^\d{9}-\d{1}$/;
+        if (!NIT_REGEX.test(nit.trim())) {
+            return {
+                esValida: false,
+                mensaje: 'El NIT debe tener el formato: 123456789-0'
             };
         }
 

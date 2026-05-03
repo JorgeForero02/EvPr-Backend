@@ -1,4 +1,5 @@
 const OpenAI = require('openai');
+const { Op } = require('sequelize');
 const { Evento, Actividad, Lugar, Empresa } = require('../models');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -47,8 +48,10 @@ class ChatbotService {
             return evento ? [evento] : [];
         }
 
+        const hoy = new Date().toISOString().split('T')[0];
+
         return await Evento.findAll({
-            where: { estado: 1 },
+            where: { estado: 1, fecha_fin: { [Op.gte]: hoy } },
             attributes: ['id', 'titulo', 'fecha_inicio', 'fecha_fin', 'modalidad', 'descripcion', 'cupos', 'url_virtual'],
             include: [
                 { model: Empresa, as: 'empresa', attributes: ['id', 'nombre'] },

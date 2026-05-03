@@ -29,7 +29,9 @@ class UbicacionController {
             const validacion = await UbicacionValidator.validarCreacion({
                 direccion,
                 id_ciudad,
-                empresaId
+                empresaId,
+                descripcion,
+                lugar
             });
 
             if (!validacion.esValida) {
@@ -40,11 +42,13 @@ class UbicacionController {
                 });
             }
 
+            const { datosSanitizados } = validacion;
+
             const resultado = await UbicacionService.crear({
                 id_empresa: empresaId,
-                lugar,
-                direccion,
-                descripcion,
+                lugar: datosSanitizados.lugar,
+                direccion: datosSanitizados.direccion,
+                descripcion: datosSanitizados.descripcion,
                 id_ciudad
             }, transaction);
 

@@ -15,6 +15,13 @@ class EventoValidator {
             };
         }
 
+        if (titulo.trim().length > 200) {
+            return {
+                esValida: false,
+                mensaje: 'El título no puede superar los 200 caracteres'
+            };
+        }
+
         if (!modalidad || !MODALIDADES.includes(modalidad)) {
             return {
                 esValida: false,
@@ -36,11 +43,33 @@ class EventoValidator {
             };
         }
 
-        if (new Date(fecha_inicio) > new Date(fecha_fin)) {
+        const MIN_YEAR = 2000;
+        const MAX_YEAR = 2100;
+        const fechaInicioObj = new Date(fecha_inicio);
+        const fechaFinObj = new Date(fecha_fin);
+
+        if (fechaInicioObj.getFullYear() < MIN_YEAR || fechaInicioObj.getFullYear() > MAX_YEAR) {
+            return { esValida: false, mensaje: `La fecha de inicio debe estar entre ${MIN_YEAR} y ${MAX_YEAR}` };
+        }
+        if (fechaFinObj.getFullYear() < MIN_YEAR || fechaFinObj.getFullYear() > MAX_YEAR) {
+            return { esValida: false, mensaje: `La fecha de fin debe estar entre ${MIN_YEAR} y ${MAX_YEAR}` };
+        }
+
+        if (fechaInicioObj > fechaFinObj) {
             return {
                 esValida: false,
                 mensaje: MENSAJES_VALIDACION.FECHAS_INVALIDAS
             };
+        }
+
+        if (datos.cupos !== undefined) {
+            const cuposNum = Number(datos.cupos);
+            if (!Number.isInteger(cuposNum) || cuposNum < 1 || cuposNum > 100000) {
+                return {
+                    esValida: false,
+                    mensaje: 'Los cupos deben ser un número entero entre 1 y 100.000'
+                };
+            }
         }
 
         const empresa = await Empresa.findByPk(empresaId);
@@ -111,6 +140,10 @@ class EventoValidator {
 
         if (titulo !== undefined && (!titulo || titulo.trim().length < 3)) {
             return MENSAJES_VALIDACION.TITULO_REQUERIDO;
+        }
+
+        if (titulo !== undefined && titulo.trim().length > 200) {
+            return 'El título no puede superar los 200 caracteres';
         }
 
         if (modalidad !== undefined && !MODALIDADES.includes(modalidad)) {

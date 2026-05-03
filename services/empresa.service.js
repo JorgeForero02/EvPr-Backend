@@ -197,7 +197,10 @@ class EmpresaService {
         let creador = null;
 
         await sequelize.transaction(async (t) => {
-            await empresa.update({ estado: nuevoEstado }, { transaction: t });
+            await empresa.update({
+                estado: nuevoEstado,
+                motivo_rechazo: aprobado ? null : (motivo || null)
+            }, { transaction: t });
 
             if (empresa.id_creador) {
                 creador = await Usuario.findByPk(empresa.id_creador, { transaction: t });

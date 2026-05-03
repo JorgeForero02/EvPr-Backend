@@ -1,8 +1,19 @@
 const { Empresa, Ciudad } = require('../models');
 const { MENSAJES_VALIDACION } = require('../constants/ubicacion.constants');
 
+const HTML_TAG_REGEX = /<[^>]*>/g;
+const SCRIPT_EVENT_REGEX = /\bon\w+\s*=/gi;
+
+function sanitizarTexto(texto) {
+    if (!texto || typeof texto !== 'string') return texto;
+    return texto
+        .replace(HTML_TAG_REGEX, '')
+        .replace(SCRIPT_EVENT_REGEX, '')
+        .trim();
+}
+
 class UbicacionValidator {
-    async validarCreacion({ direccion, id_ciudad, empresaId }) {
+    async validarCreacion({ direccion, id_ciudad, empresaId, descripcion, lugar }) {
         if (!direccion || direccion.trim().length < 3) {
             return {
                 esValida: false,
@@ -35,7 +46,14 @@ class UbicacionValidator {
             };
         }
 
-        return { esValida: true };
+        return {
+            esValida: true,
+            datosSanitizados: {
+                direccion: sanitizarTexto(direccion),
+                descripcion: sanitizarTexto(descripcion),
+                lugar: sanitizarTexto(lugar)
+            }
+        };
     }
 }
 

@@ -1,5 +1,6 @@
 const { Evento, Empresa, Usuario, Actividad, Inscripcion, Lugar, Asistente, Ponente, PonenteActividad, AdministradorEmpresa, Asistencia, Encuesta, RespuestaEncuesta, sequelize: db } = require('../models');
 const { ESTADOS, MODALIDADES } = require('../constants/evento.constants');
+const { ESTADOS: ESTADOS_INSCRIPCION } = require('../constants/inscripcion.constants');
 const { Op } = require('sequelize');
 const notificacionService = require('./notificacion.service');
 const EncuestaService = require('./encuesta.service');
@@ -98,7 +99,7 @@ class EventoService {
                 const inscripciones = await Inscripcion.findAll({
                     where: {
                         id_evento: eventoId,
-                        estado: { [Op.in]: ['Confirmada', 'Pendiente'] }
+                        estado: { [Op.in]: [ESTADOS_INSCRIPCION.CONFIRMADA, ESTADOS_INSCRIPCION.PENDIENTE] }
                     },
                     include: [{
                         model: Asistente,
@@ -230,7 +231,7 @@ class EventoService {
                     model: Inscripcion,
                     as: 'inscripciones',
                     attributes: ['id'],
-                    where: { estado: 'Confirmada' },
+                    where: { estado: ESTADOS_INSCRIPCION.CONFIRMADA },
                     required: false
                 }
             ],
@@ -310,7 +311,7 @@ class EventoService {
         const inscripciones = await Inscripcion.findAll({
             where: {
                 id_evento: id,
-                estado: { [Op.in]: ['Confirmada', 'Pendiente'] }
+                estado: { [Op.in]: [ESTADOS_INSCRIPCION.CONFIRMADA, ESTADOS_INSCRIPCION.PENDIENTE] }
             },
             include: [{
                 model: Asistente,
@@ -382,11 +383,11 @@ class EventoService {
         if (!evento) return null;
 
         const totalInscritos = await Inscripcion.count({
-            where: { id_evento: eventoId, estado: 'Confirmada' }
+            where: { id_evento: eventoId, estado: ESTADOS_INSCRIPCION.CONFIRMADA }
         });
 
         const inscripcionIds = await Inscripcion.findAll({
-            where: { id_evento: eventoId, estado: 'Confirmada' },
+            where: { id_evento: eventoId, estado: ESTADOS_INSCRIPCION.CONFIRMADA },
             attributes: ['id']
         }).then(rows => rows.map(r => r.id));
 
@@ -465,7 +466,7 @@ class EventoService {
 
     async obtenerInscritosConfirmados(eventoId) {
         const inscripciones = await Inscripcion.findAll({
-            where: { id_evento: eventoId, estado: 'Confirmada' },
+            where: { id_evento: eventoId, estado: ESTADOS_INSCRIPCION.CONFIRMADA },
             include: [{
                 model: Asistente,
                 as: 'asistente',

@@ -13,7 +13,7 @@ class UsuarioService {
     }
 
     async buscarPorCorreo(correo) {
-        return await Usuario.findOne({ where: { correo } });
+        return await Usuario.findOne({ where: { correo }, attributes: { exclude: ['contraseña'] } });
     }
 
     async buscarPorCedula(cedula) {
@@ -147,8 +147,10 @@ class UsuarioService {
         };
     }
 
-    async actualizarPerfil(id, { nombre, telefono, cedula }) {
-        const usuario = await Usuario.findByPk(id);
+    async actualizarPerfil(id, { nombre, telefono, cedula, correo }) {
+        const usuario = await Usuario.findByPk(id, {
+            attributes: { exclude: ['contraseña'] }
+        });
 
         if (!usuario) {
             return {
@@ -157,14 +159,22 @@ class UsuarioService {
             };
         }
 
+        if (correo && correo !== usuario.correo) {
+            const existente = await Usuario.findOne({ where: { correo, id: { [Op.ne]: id } } });
+            if (existente) {
+                return { exito: false, mensaje: MENSAJES.CORREO_YA_REGISTRADO };
+            }
+        }
+
         const datosAnteriores = { ...usuario.toJSON() };
-        await usuario.update({ nombre, telefono, cedula });
+        await usuario.update({ nombre, telefono, cedula, ...(correo && { correo }) });
+        const datosNuevos = { ...usuario.toJSON() };
 
         return {
             exito: true,
             usuario,
             datosAnteriores,
-            datosNuevos: usuario.toJSON()
+            datosNuevos
         };
     }
 
@@ -272,6 +282,8 @@ class UsuarioService {
 
     async obtenerTodosCompletos(filtros = {}) {
         const where = {};
+        const limit = Math.min(parseInt(filtros.limit) || 500, 1000);
+        const offset = parseInt(filtros.offset) || 0;
 
         if (filtros.nombre) where.nombre = { [Op.like]: `%${filtros.nombre}%` };
         if (filtros.correo) where.correo = { [Op.like]: `%${filtros.correo}%` };
@@ -281,7 +293,9 @@ class UsuarioService {
 
         const usuarios = await Usuario.findAll({
             where,
-            attributes: ['id', 'nombre', 'cedula', 'telefono', 'correo', 'activo']
+            attributes: ['id', 'nombre', 'cedula', 'telefono', 'correo', 'activo'],
+            limit,
+            offset
         });
 
         const resultados = await Promise.all(
