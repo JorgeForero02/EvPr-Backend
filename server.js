@@ -17,26 +17,6 @@ setupSwagger(app);
 
 app.use(helmet());
 
-const limiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 60,
-    message: { success: false, message: 'Demasiadas solicitudes. Intenta en 1 minuto.' },
-    standardHeaders: true,
-    legacyHeaders: false
-});
-
-const limiterCreacion = rateLimit({
-    windowMs: 60 * 1000,
-    max: 10,
-    message: { success: false, message: 'Demasiadas solicitudes de creación. Intenta en 1 minuto.' },
-    standardHeaders: true,
-    legacyHeaders: false
-});
-
-app.use('/api', limiter);
-app.use('/api/eventos', limiterCreacion);
-app.use('/api/inscripciones', limiterCreacion);
-
 const ALLOWED_ORIGINS = [
   'https://eventplanner.up.railway.app',
   'https://evpr-backend-production.up.railway.app',
@@ -60,6 +40,26 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+
+const limiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 120,
+    message: { success: false, message: 'Demasiadas solicitudes. Intenta en 1 minuto.' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+const limiterCreacion = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: { success: false, message: 'Demasiadas solicitudes de creación. Intenta en 1 minuto.' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+app.use('/api', limiter);
+app.use('/api/eventos', limiterCreacion);
+app.use('/api/inscripciones', limiterCreacion);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
