@@ -116,14 +116,6 @@ class InscripcionService {
             };
         }
 
-        if (fechaHoy > evento.fecha_inicio) {
-            return {
-                exito: false,
-                mensaje: 'No es posible inscribirse a un evento que ya ha iniciado',
-                codigoEstado: 400
-            };
-        }
-
         const inscripcionExistente = await Inscripcion.findOne({
             where: { id_asistente: asistente.id_asistente, id_evento: eventoId },
             transaction

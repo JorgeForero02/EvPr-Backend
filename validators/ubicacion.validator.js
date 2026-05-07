@@ -55,6 +55,14 @@ class UbicacionValidator {
             }
         };
     }
+
+    validarActualizacion({ lugar, direccion, descripcion }) {
+        const datosSanitizados = {};
+        if (lugar !== undefined) datosSanitizados.lugar = sanitizarTexto(lugar);
+        if (direccion !== undefined) datosSanitizados.direccion = sanitizarTexto(direccion);
+        if (descripcion !== undefined) datosSanitizados.descripcion = sanitizarTexto(descripcion);
+        return { esValida: true, datosSanitizados };
+    }
 }
 
 module.exports = new UbicacionValidator();

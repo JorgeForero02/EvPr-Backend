@@ -1,6 +1,8 @@
 const OpenAI = require('openai');
 const { Op } = require('sequelize');
-const { Evento, Actividad, Lugar, Empresa } = require('../models');
+const models = require('../models');
+const { Evento, Actividad, Lugar, Empresa, Inscripcion } = models;
+const sequelize = models.sequelize;
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -38,7 +40,11 @@ class ChatbotService {
 
         if (id_evento) {
             const evento = await Evento.findByPk(id_evento, {
-                attributes: ['id', 'titulo', 'fecha_inicio', 'fecha_fin', 'modalidad', 'descripcion', 'cupos', 'url_virtual', 'estado'],
+                attributes: [
+                    'id', 'titulo', 'fecha_inicio', 'fecha_fin', 'modalidad', 'descripcion',
+                    'cupos', 'url_virtual', 'estado',
+                    [sequelize.literal('(SELECT COUNT(*) FROM Inscripcion WHERE Inscripcion.id_evento = Evento.id AND Inscripcion.estado = \'Confirmada\')'), 'inscritos']
+                ],
                 include: [
                     { model: Empresa, as: 'empresa', attributes: ['id', 'nombre'] },
                     includeActividades
@@ -52,7 +58,11 @@ class ChatbotService {
 
         return await Evento.findAll({
             where: { estado: 1, fecha_fin: { [Op.gte]: hoy } },
-            attributes: ['id', 'titulo', 'fecha_inicio', 'fecha_fin', 'modalidad', 'descripcion', 'cupos', 'url_virtual'],
+            attributes: [
+                'id', 'titulo', 'fecha_inicio', 'fecha_fin', 'modalidad', 'descripcion',
+                'cupos', 'url_virtual',
+                [sequelize.literal('(SELECT COUNT(*) FROM Inscripcion WHERE Inscripcion.id_evento = Evento.id AND Inscripcion.estado = \'Confirmada\')'), 'inscritos']
+            ],
             include: [
                 { model: Empresa, as: 'empresa', attributes: ['id', 'nombre'] },
                 {
@@ -84,7 +94,13 @@ class ChatbotService {
                 ev.descripcion ? `Descripción: ${ev.descripcion}` : null,
                 ev.url_virtual ? `Enlace: ${ev.url_virtual}` : null,
                 ev.empresa ? `Empresa organizadora: ${ev.empresa.nombre}` : null,
-                ev.cupos ? `Cupos disponibles: ${ev.cupos}` : null,
+                (() => {
+                    const total = ev.cupos;
+                    const inscritos = ev.getDataValue ? ev.getDataValue('inscritos') : (ev.dataValues?.inscritos ?? 0);
+                    if (total == null || total === 0) return null;
+                    const disponibles = Math.max(0, total - (inscritos || 0));
+                    return `Cupos: ${total} totales, ${inscritos || 0} inscritos, ${disponibles} disponibles`;
+                })(),
                 actividades ? `Agenda:\n${actividades}` : null
             ].filter(Boolean).join('\n');
         }).join('\n\n---\n\n');

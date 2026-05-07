@@ -13,12 +13,24 @@ class UbicacionService {
             Ciudad.findByPk(datosUbicacion.id_ciudad)
         ]);
 
-        // [BACKEND-FIX] B14: Validar existencia de FK antes de crear
         if (!empresa) {
             throw new Error('La empresa especificada no existe');
         }
         if (!ciudad) {
             throw new Error('La ciudad especificada no existe');
+        }
+
+        const duplicada = await Ubicacion.findOne({
+            where: {
+                id_empresa: datosUbicacion.id_empresa,
+                direccion: datosUbicacion.direccion,
+                activo: 1
+            },
+            transaction
+        });
+
+        if (duplicada) {
+            throw new Error('Ya existe una ubicación con esta dirección en la empresa');
         }
 
         const ubicacion = await Ubicacion.create(datosUbicacion, { transaction });

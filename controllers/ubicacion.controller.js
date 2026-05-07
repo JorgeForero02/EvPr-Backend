@@ -169,6 +169,9 @@ class UbicacionController {
             const { lugar, direccion, descripcion } = req.body;
             const usuario = req.usuario;
 
+            const validacion = UbicacionValidator.validarActualizacion({ lugar, direccion, descripcion });
+            const datos = validacion.datosSanitizados;
+
             const ubicacion = await UbicacionService.buscarPorId(ubicacionId, transaction);
 
             if (!ubicacion) {
@@ -193,11 +196,7 @@ class UbicacionController {
                 });
             }
 
-            const actualizaciones = UbicacionService.construirActualizaciones({
-                lugar,
-                direccion,
-                descripcion
-            });
+            const actualizaciones = UbicacionService.construirActualizaciones(datos);
 
             await ubicacion.update(actualizaciones, { transaction });
 

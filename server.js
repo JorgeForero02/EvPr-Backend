@@ -37,8 +37,21 @@ app.use('/api', limiter);
 app.use('/api/eventos', limiterCreacion);
 app.use('/api/inscripciones', limiterCreacion);
 
+const ALLOWED_ORIGINS = [
+  'https://eventplanner.up.railway.app',
+  'https://evpr-backend-production.up.railway.app',
+  'http://localhost:3000',
+  'http://localhost:3001'
+];
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'https://eventplanner.up.railway.app',
+  origin: (origin, callback) => {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Origen no permitido por CORS'));
+    }
+  },
   credentials: true
 };
 app.use(cors(corsOptions));
