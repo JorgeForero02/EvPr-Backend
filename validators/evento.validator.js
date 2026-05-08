@@ -62,6 +62,15 @@ class EventoValidator {
             };
         }
 
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        if (fechaInicioObj < hoy) {
+            return {
+                esValida: false,
+                mensaje: 'No se puede crear un evento con fecha de inicio pasada'
+            };
+        }
+
         if (datos.cupos !== undefined) {
             const cuposNum = Number(datos.cupos);
             if (!Number.isInteger(cuposNum) || cuposNum < 1 || cuposNum > 100000) {
@@ -157,6 +166,14 @@ class EventoValidator {
         if (fechaInicioEfectiva && fechaFinEfectiva &&
             new Date(fechaInicioEfectiva) > new Date(fechaFinEfectiva)) {
             return MENSAJES_VALIDACION.FECHAS_INVALIDAS;
+        }
+
+        if (fecha_inicio !== undefined) {
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            if (new Date(fecha_inicio) < hoy) {
+                return 'No se puede asignar una fecha de inicio pasada';
+            }
         }
 
         // Al publicar el evento, fecha_limite_cancelacion es obligatoria

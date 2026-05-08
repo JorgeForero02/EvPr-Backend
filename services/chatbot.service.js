@@ -96,10 +96,10 @@ class ChatbotService {
                 ev.empresa ? `Empresa organizadora: ${ev.empresa.nombre}` : null,
                 (() => {
                     const total = ev.cupos;
-                    const inscritos = ev.getDataValue ? ev.getDataValue('inscritos') : (ev.dataValues?.inscritos ?? 0);
+                    const inscritos = parseInt(ev.inscritos) || 0;
                     if (total == null || total === 0) return null;
-                    const disponibles = Math.max(0, total - (inscritos || 0));
-                    return `Cupos: ${total} totales, ${inscritos || 0} inscritos, ${disponibles} disponibles`;
+                    const disponibles = Math.max(0, total - inscritos);
+                    return `Cupos: ${total} totales, ${inscritos} inscritos, ${disponibles} disponibles`;
                 })(),
                 actividades ? `Agenda:\n${actividades}` : null
             ].filter(Boolean).join('\n');
