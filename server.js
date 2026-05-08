@@ -49,6 +49,14 @@ const limiter = rateLimit({
     legacyHeaders: false
 });
 
+const limiterLectura = rateLimit({
+    windowMs: 60 * 1000,
+    max: 60,
+    message: { success: false, message: 'Demasiadas solicitudes. Intenta en 1 minuto.' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
 const limiterCreacion = rateLimit({
     windowMs: 60 * 1000,
     max: 10,
@@ -58,8 +66,8 @@ const limiterCreacion = rateLimit({
 });
 
 app.use('/api', limiter);
-app.use('/api/eventos', limiterCreacion);
-app.use('/api/inscripciones', limiterCreacion);
+app.use('/api/eventos', limiterLectura);
+app.use('/api/inscripciones', limiterLectura);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
