@@ -54,7 +54,7 @@ class InscripcionService {
                 'id', 'titulo', 'descripcion', 'modalidad', 'hora', 'cupos',
                 'fecha_inicio', 'fecha_fin',
                 [
-                    sequelize.literal('(SELECT COUNT(*) FROM Inscripcion WHERE Inscripcion.id_evento = Evento.id)'),
+                    sequelize.literal('(SELECT COUNT(*) FROM Inscripcion WHERE Inscripcion.id_evento = Evento.id AND Inscripcion.estado = \'Confirmada\')'),
                     'inscritos'
                 ]
             ],
@@ -112,6 +112,14 @@ class InscripcionService {
             return {
                 exito: false,
                 mensaje: MENSAJES.EVENTO_FINALIZADO,
+                codigoEstado: 400
+            };
+        }
+
+        if (fechaHoy > evento.fecha_inicio) {
+            return {
+                exito: false,
+                mensaje: 'No es posible inscribirse a un evento que ya ha iniciado',
                 codigoEstado: 400
             };
         }
