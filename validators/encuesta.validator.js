@@ -174,19 +174,33 @@ const validarPermisoCreacionEncuesta = async (req, res, next) => {
         }
 
         if (usuario.rol === 'Ponente' || usuario.rol === 'ponente') {
+            if (!id_actividad) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Los ponentes deben asociar la encuesta a una actividad.'
+                });
+            }
+
             const ponente = await Ponente.findOne({
                 where: {
                     id_usuario: usuario.id
                 }
             });
-            
+
+            if (!ponente) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'No se encontró tu perfil de ponente.'
+                });
+            }
+
             const ponenteActividad = await PonenteActividad.findOne({
                 where: {
                     id_actividad: id_actividad,
-                    id_ponente: ponente.id_ponente        
+                    id_ponente: ponente.id_ponente
                 }
             });
-        
+
             if (!ponenteActividad) {
                 return res.status(403).json({
                     success: false,

@@ -280,16 +280,16 @@ class EncuestaService {
     }
 
     async marcarComoCompletada(encuestaId, asistenteId) {
-        const respuesta = await RespuestaEncuesta. findOne({
+        const [respuesta] = await RespuestaEncuesta.findOrCreate({
             where: {
                 id_encuesta: encuestaId,
                 id_asistente: asistenteId
+            },
+            defaults: {
+                estado: 'pendiente',
+                fecha_envio: new Date()
             }
         });
-
-        if (! respuesta) {
-            throw new Error('No registrado en esta encuesta');
-        }
 
         if (respuesta.estado === 'completada') {
             throw new Error('Encuesta ya completada');
