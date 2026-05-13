@@ -18,6 +18,10 @@ class EncuestaService {
     async crear(datosEncuesta, transaction) {
         const encuesta = await Encuesta.create({
             ...datosEncuesta,
+            url_respuestas: datosEncuesta.url_respuestas || null,
+            fecha_inicio:   datosEncuesta.fecha_inicio   || null,
+            fecha_fin:      datosEncuesta.fecha_fin       || null,
+            id_actividad:   datosEncuesta.id_actividad    || null,
             estado: datosEncuesta.estado || ESTADOS_ENCUESTA.BORRADOR
         }, { transaction });
 
@@ -276,16 +280,16 @@ class EncuestaService {
     }
 
     async marcarComoCompletada(encuestaId, asistenteId) {
-        const respuesta = await RespuestaEncuesta. findOne({
+        const [respuesta] = await RespuestaEncuesta.findOrCreate({
             where: {
                 id_encuesta: encuestaId,
                 id_asistente: asistenteId
+            },
+            defaults: {
+                estado: 'pendiente',
+                fecha_envio: new Date()
             }
         });
-
-        if (! respuesta) {
-            throw new Error('No registrado en esta encuesta');
-        }
 
         if (respuesta.estado === 'completada') {
             throw new Error('Encuesta ya completada');
@@ -393,10 +397,14 @@ class EncuestaService {
             'id_actividad'
         ];
 
+        const camposNullables = ['url_respuestas', 'fecha_inicio', 'fecha_fin', 'id_actividad'];
+
         const actualizaciones = {};
-        camposPermitidos. forEach(campo => {
+        camposPermitidos.forEach(campo => {
             if (datos[campo] !== undefined) {
-                actualizaciones[campo] = datos[campo];
+                actualizaciones[campo] = camposNullables.includes(campo)
+                    ? (datos[campo] || null)
+                    : datos[campo];
             }
         });
 
