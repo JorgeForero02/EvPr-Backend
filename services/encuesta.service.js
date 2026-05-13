@@ -65,7 +65,7 @@ class EncuestaService {
         return await Encuesta.findAll({
             where: { id_evento: eventoId },
             include: [
-                { model: RespuestaEncuesta, as: 'respuestas', attributes: ['id', 'estado', 'fecha_envio', 'fecha_completado'] }
+                { model: RespuestaEncuesta, as: 'respuestas', attributes: ['id', 'id_asistente', 'estado', 'fecha_envio', 'fecha_completado'] }
             ],
             order: [['fecha_creacion', 'DESC']]
         });
@@ -75,7 +75,7 @@ class EncuestaService {
         return await Encuesta.findAll({
             where: { id_actividad: actividadId },
             include: [
-                { model: RespuestaEncuesta, as: 'respuestas', attributes: ['id', 'estado', 'fecha_envio', 'fecha_completado'] }
+                { model: RespuestaEncuesta, as: 'respuestas', attributes: ['id', 'id_asistente', 'estado', 'fecha_envio', 'fecha_completado'] }
             ],
             order: [['fecha_creacion', 'DESC']]
         });
@@ -88,7 +88,7 @@ class EncuestaService {
                 habilitada_para_ponente: true
             },
             include: [
-                { model: RespuestaEncuesta, as: 'respuestas', attributes: ['id', 'estado', 'fecha_envio', 'fecha_completado'] }
+                { model: RespuestaEncuesta, as: 'respuestas', attributes: ['id', 'id_asistente', 'estado', 'fecha_envio', 'fecha_completado'] }
             ],
             order: [['fecha_creacion', 'DESC']]
         });
@@ -102,7 +102,7 @@ class EncuestaService {
                 habilitada_para_ponente: true
             },
             include: [
-                { model: RespuestaEncuesta, as: 'respuestas', attributes: ['id', 'estado', 'fecha_envio', 'fecha_completado'] }
+                { model: RespuestaEncuesta, as: 'respuestas', attributes: ['id', 'id_asistente', 'estado', 'fecha_envio', 'fecha_completado'] }
             ],
             order: [['fecha_creacion', 'DESC']]
         });
@@ -115,7 +115,7 @@ class EncuestaService {
                 habilitada_para_ponente: true
             },
             include: [
-                { model: RespuestaEncuesta, as: 'respuestas', attributes: ['id', 'estado', 'fecha_envio', 'fecha_completado'] }
+                { model: RespuestaEncuesta, as: 'respuestas', attributes: ['id', 'id_asistente', 'estado', 'fecha_envio', 'fecha_completado'] }
             ],
             order: [['fecha_creacion', 'DESC']]
         });
