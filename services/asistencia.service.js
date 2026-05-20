@@ -41,7 +41,7 @@ class AsistenciaService {
                 {
                     model: Evento,
                     as: 'evento',
-                    attributes: ['id', 'titulo', 'estado', 'fecha_inicio', 'fecha_fin']
+                    attributes: ['id', 'titulo', 'estado', 'fecha_inicio', 'fecha_fin', 'id_creador', 'id_empresa']
                 },
                 {
                     model: Asistente,

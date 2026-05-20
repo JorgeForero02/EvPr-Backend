@@ -7,85 +7,6 @@ const { CODIGOS_HTTP, MENSAJES } = require('../constants/asistencia.constants');
 
 class AsistenciaController {
 
-    registrarAsistencia = async (req, res, next) => {
-        const transaction = await AsistenciaService.crearTransaccion();
-
-        try {
-            const { id_inscripcion } = req.body;
-            const usuario = req.usuario;
-
-            const validacion = await AsistenciaValidator.validarRegistro(id_inscripcion, usuario.id, transaction);
-
-            if (!validacion.esValida) {
-                await transaction.rollback();
-                return this._responderError(res, validacion);
-            }
-
-            const { inscripcion, evento } = validacion;
-            const fechaHoy = AsistenciaService.obtenerFechaHoy();
-
-            const validacionFecha = AsistenciaValidator.validarFechaEnRangoEvento(
-                fechaHoy,
-                evento.fecha_inicio,
-                evento.fecha_fin
-            );
-
-            if (!validacionFecha.esValida) {
-                await transaction.rollback();
-                return ApiResponse.error(res, validacionFecha.mensaje, CODIGOS_HTTP.BAD_REQUEST);
-            }
-
-            const asistenciaManual = await AsistenciaService.buscarAsistenciaManual(
-                id_inscripcion,
-                transaction
-            );
-
-            if (asistenciaManual) {
-                await transaction.rollback();
-                return ApiResponse.error(res, MENSAJES.ASISTENCIA_BLOQUEADA_POR_ORGANIZADOR, CODIGOS_HTTP.FORBIDDEN);
-            }
-
-            const existeAsistencia = await AsistenciaService.verificarAsistenciaExistente(
-                id_inscripcion,
-                fechaHoy,
-                transaction
-            );
-
-            if (existeAsistencia) {
-                await transaction.rollback();
-                return ApiResponse.error(res, MENSAJES.ASISTENCIA_YA_REGISTRADA, CODIGOS_HTTP.CONFLICTO);
-            }
-
-            const nuevaAsistencia = await AsistenciaService.crear({
-                fecha: fechaHoy,
-                estado: 'Presente',
-                registrado_por: 'asistente',
-                inscripcion: id_inscripcion
-            }, transaction);
-
-            await AuditoriaService.registrarCreacion('asistencia', {
-                id: nuevaAsistencia.id,
-                evento: evento.titulo,
-                asistente: usuario.nombre,
-                fecha: fechaHoy
-            }, usuario);
-
-            await transaction.commit();
-
-            return ApiResponse.success(
-                res,
-                nuevaAsistencia,
-                MENSAJES.ASISTENCIA_REGISTRADA,
-                CODIGOS_HTTP.CREADO
-            );
-        } catch (error) {
-            if (transaction && !transaction.finished) {
-                await transaction.rollback();
-            }
-            next(error);
-        }
-    }
-
     obtenerMisAsistencias = async (req, res, next) => {
         try {
             const usuarioId = req.usuario.id;
@@ -115,7 +36,7 @@ class AsistenciaController {
 
             const validacion = await AsistenciaValidator.validarRegistroPorCodigo(
                 codigo,
-                usuario.id,
+                usuario,
                 transaction
             );
 
@@ -138,16 +59,6 @@ class AsistenciaController {
                 return ApiResponse.error(res, validacionFecha.mensaje, CODIGOS_HTTP.BAD_REQUEST);
             }
 
-            const asistenciaManual = await AsistenciaService.buscarAsistenciaManual(
-                inscripcion.id,
-                transaction
-            );
-
-            if (asistenciaManual) {
-                await transaction.rollback();
-                return ApiResponse.error(res, MENSAJES.ASISTENCIA_BLOQUEADA_POR_ORGANIZADOR, CODIGOS_HTTP.FORBIDDEN);
-            }
-
             const existeAsistencia = await AsistenciaService.verificarAsistenciaExistente(
                 inscripcion.id,
                 fechaHoy,
@@ -162,7 +73,7 @@ class AsistenciaController {
             const nuevaAsistencia = await AsistenciaService.crear({
                 fecha: fechaHoy,
                 estado: 'Presente',
-                registrado_por: 'asistente',
+                registrado_por: 'organizador',
                 inscripcion: inscripcion.id
             }, transaction);
 
