@@ -23,7 +23,7 @@ const MENSAJES = {
     SIN_PERMISO_CANCELAR: 'No tienes permiso para cancelar esta inscripción.',
     EVENTO_YA_INICIO: 'No puedes cancelar una inscripción de un evento que ya ha iniciado.',
     PLAZO_CANCELACION_VENCIDO: 'No puedes cancelar tu inscripción porque el plazo de cancelación configurado para este evento ha vencido.',
-    ESTADO_NO_CANCELABLE: 'Solo se pueden cancelar inscripciones en estado Confirmada.'
+    ESTADO_NO_CANCELABLE: 'Esta inscripción ya fue cancelada.'
 };
 
 const MENSAJES_VALIDACION = {

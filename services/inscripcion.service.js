@@ -379,7 +379,7 @@ class InscripcionService {
             return { exito: false, mensaje: MENSAJES.SIN_PERMISO_CANCELAR, codigoEstado: 403 };
         }
 
-        if (inscripcion.estado !== ESTADOS.CONFIRMADA) {
+        if (inscripcion.estado === ESTADOS.CANCELADA) {
             return { exito: false, mensaje: MENSAJES.ESTADO_NO_CANCELABLE, codigoEstado: 400 };
         }
 
