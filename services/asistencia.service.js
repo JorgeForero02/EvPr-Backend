@@ -84,7 +84,7 @@ class AsistenciaService {
     async obtenerInscripcionesConAsistencias(asistenteId) {
         return await Inscripcion.findAll({
             where: { id_asistente: asistenteId },
-            attributes: ['id', 'id_evento', 'codigo'],
+            attributes: ['id', 'id_evento', 'codigo', 'estado'],
             include: [
                 {
                     model: Evento,
