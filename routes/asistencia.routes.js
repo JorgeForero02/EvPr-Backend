@@ -4,6 +4,8 @@ const AsistenciaController = require('../controllers/asistencia.controller');
 const { auth, isOrganizadorOGerente } = require('../middlewares/auth');
 const auditoriaMiddleware = require('../middlewares/auditoria.middleware');
 
+router.get('/codigo-checkin/:id_evento', auth, isOrganizadorOGerente, AsistenciaController.obtenerCodigoCheckin);
+router.post('/checkin', auth, AsistenciaController.registrarCheckin);
 router.post('/codigo', auth, isOrganizadorOGerente, auditoriaMiddleware('POST'), AsistenciaController.registrarAsistenciaPorCodigo);
 
 router.get('/mis-asistencias', auth, AsistenciaController.obtenerMisAsistencias);

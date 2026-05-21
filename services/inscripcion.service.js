@@ -130,6 +130,14 @@ class InscripcionService {
         });
 
         if (inscripcionExistente) {
+            if (inscripcionExistente.estado === ESTADOS.CANCELADA) {
+                await inscripcionExistente.update({
+                    estado: ESTADOS.CONFIRMADA,
+                    fecha: this._obtenerFechaHoy(),
+                    codigo: uuidv4()
+                }, { transaction });
+                return { exito: true, inscripcion: inscripcionExistente, evento };
+            }
             return {
                 exito: false,
                 mensaje: MENSAJES.YA_INSCRITO,

@@ -34,7 +34,9 @@ const MENSAJES = {
     ASISTENCIA_BLOQUEADA_POR_ORGANIZADOR: 'El organizador ya registró tu asistencia. No puedes modificarla.',
     ASISTENCIA_MANUAL_REGISTRADA: 'Asistencia registrada manualmente de forma exitosa.',
     ESTADO_MANUAL_INVALIDO: "El estado debe ser 'Presente' o 'Ausente'.",
-    SIN_PERMISO_REGISTRO_MANUAL: 'No tienes permiso para registrar asistencia en este evento.'
+    SIN_PERMISO_REGISTRO_MANUAL: 'No tienes permiso para registrar asistencia en este evento.',
+    CODIGO_CHECKIN_INVALIDO: 'El código de asistencia es incorrecto. Verifica con el organizador.',
+    CHECKIN_REGISTRADO: 'Asistencia registrada exitosamente.'
 };
 
 module.exports = {

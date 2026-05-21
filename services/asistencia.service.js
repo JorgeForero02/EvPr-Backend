@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { Asistencia, Inscripcion, Evento, Asistente, Usuario, Actividad, Lugar } = require('../models');
 const sequelize = require('../config/database');
 
@@ -175,6 +176,27 @@ class AsistenciaService {
             registrado_por: 'organizador',
             estado_manual: true
         }, { transaction });
+    }
+
+    generarCodigoCheckin(eventoId, fecha) {
+        return crypto
+            .createHash('sha256')
+            .update(`checkin-${eventoId}-${fecha}`)
+            .digest('hex')
+            .slice(0, 6)
+            .toUpperCase();
+    }
+
+    async buscarInscripcionConfirmadaPorAsistenteYEvento(asistenteId, eventoId, transaction) {
+        return await Inscripcion.findOne({
+            where: { id_asistente: asistenteId, id_evento: eventoId, estado: 'Confirmada' },
+            include: [{
+                model: Evento,
+                as: 'evento',
+                attributes: ['id', 'titulo', 'estado', 'fecha_inicio', 'fecha_fin']
+            }],
+            transaction
+        });
     }
 
     async obtenerAsistenciasPorEvento(eventoId, fecha = null) {
