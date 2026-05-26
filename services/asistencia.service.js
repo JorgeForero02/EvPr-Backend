@@ -82,7 +82,7 @@ class AsistenciaService {
     }
 
     async obtenerInscripcionesConAsistencias(asistenteId) {
-        return await Inscripcion.findAll({
+        const inscripciones = await Inscripcion.findAll({
             where: { id_asistente: asistenteId },
             attributes: ['id', 'id_evento', 'codigo', 'estado'],
             include: [
@@ -107,14 +107,25 @@ class AsistenciaService {
                 {
                     model: Asistencia,
                     as: 'asistencias',
+                    required: false,
                     attributes: ['id', 'fecha', 'estado']
                 }
             ],
-            order: [
-                ['id', 'DESC'],
-                [{ model: Asistencia, as: 'asistencias' }, 'fecha', 'DESC']
-            ]
+            order: [['id', 'DESC']]
         });
+
+        // Ordenar asistencias de cada inscripción por fecha descendente manualmente
+        // para evitar duplicación de filas con LEFT JOIN + ORDER en Sequelize
+        inscripciones.forEach((inscripcion) => {
+            if (inscripcion.asistencias && inscripcion.asistencias.length > 1) {
+                inscripcion.asistencias.sort((a, b) => {
+                    if (!a.fecha || !b.fecha) return 0;
+                    return String(b.fecha).localeCompare(String(a.fecha));
+                });
+            }
+        });
+
+        return inscripciones;
     }
 
     // Devuelve el registro manual del organizador para esta inscripción, si existe
