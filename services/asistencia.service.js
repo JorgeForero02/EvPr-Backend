@@ -205,7 +205,7 @@ class AsistenciaService {
             whereAsistencia.fecha = fecha;
         }
 
-        return await Inscripcion.findAll({
+        const inscripciones = await Inscripcion.findAll({
             where: { id_evento: eventoId },
             include: [
                 {
@@ -224,11 +224,33 @@ class AsistenciaService {
                     required: false,
                     attributes: ['id', 'fecha', 'estado']
                 }
-            ],
-            order: [
-                [{ model: Asistencia, as: 'asistencias' }, 'fecha', 'DESC']
             ]
         });
+
+        // Ordenar asistencias de cada inscripción por fecha descendente manualmente
+        // para evitar problemas de SQL con LEFT JOIN + ORDER en Sequelize
+        const aStringFecha = (val) => {
+            if (!val) return '';
+            if (typeof val === 'string') return val;
+            try {
+                return new Date(val).toISOString().split('T')[0];
+            } catch {
+                return String(val);
+            }
+        };
+
+        inscripciones.forEach((inscripcion) => {
+            if (inscripcion.asistencias && inscripcion.asistencias.length > 1) {
+                inscripcion.asistencias.sort((a, b) => {
+                    const fa = aStringFecha(a.fecha);
+                    const fb = aStringFecha(b.fecha);
+                    if (!fa || !fb) return 0;
+                    return fb.localeCompare(fa);
+                });
+            }
+        });
+
+        return inscripciones;
     }
 }
 
