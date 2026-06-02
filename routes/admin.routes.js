@@ -8,6 +8,7 @@ const { auth, isAdministrador } = require('../middlewares/auth');
 router.get('/dashboard/stats', auth, isAdministrador, AdminController.obtenerDashboardStats);
 router.get('/dashboard/metricas-agregadas', auth, isAdministrador, AdminController.obtenerMetricasAgregadas);
 router.get('/dashboard/exportar-csv', auth, isAdministrador, AdminController.exportarDashboardCSV);
+router.get('/dashboard/proyecciones', auth, isAdministrador, AdminController.obtenerProyecciones);
 
 // B4: Gestión de roles del sistema
 router.get('/roles', auth, isAdministrador, AdminController.listarRoles);

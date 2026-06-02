@@ -11,6 +11,7 @@ const eventoController = require('../controllers/evento.controller');
 const actividadController = require('../controllers/actividad.controller');
 const presupuestoController = require('../controllers/presupuesto.controller');
 const InscripcionController = require('../controllers/inscripcion.controller');
+const RecomendacionController = require('../controllers/recomendacion.controller');
 
 // POST - Crear evento
 router.post('/', auth, isOrganizadorOGerente, verificarPermisoEvento, auditoriaMiddleware('POST'), eventoController.crearEvento);
@@ -18,6 +19,8 @@ router.post('/', auth, isOrganizadorOGerente, verificarPermisoEvento, auditoriaM
 // GET - Obtener todos los eventos
 router.get('/', auth, auditoriaMiddleware('GET'), eventoController.obtenerEventos);
 
+// RF50 — Ediciones anteriores (must be before /:eventoId to avoid route shadowing)
+router.get('/:id/ediciones-anteriores', auth, isOrganizadorOGerente, RecomendacionController.resumenEdicionesAnteriores);
 
 // GET - Obtener evento por ID
 router.get('/:eventoId', auth, auditoriaMiddleware('GET'), eventoController.obtenerEventoById);

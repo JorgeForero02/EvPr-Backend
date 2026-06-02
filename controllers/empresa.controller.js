@@ -327,6 +327,102 @@ class EmpresaController {
       next(error);
     }
   }
+
+  async recomendarUbicaciones(req, res) {
+    try {
+      const { empresaId } = req.params;
+      const { tipo } = req.query;
+      const AnaliticaService = require('../services/analitica.service');
+      const { sequelize } = require('../models');
+
+      let filtroModalidad = '';
+      const repl = { empresaId };
+      if (tipo) {
+        filtroModalidad = 'AND ev.modalidad = :tipo';
+        repl.tipo = tipo;
+      }
+
+      const [rows] = await sequelize.query(`
+        SELECT l.id AS id_lugar, l.nombre,
+          COALESCE(SUM(insc.confirmadas),0) AS confirmadas,
+          COALESCE(SUM(asist.asistencias),0) AS asistencias,
+          COUNT(DISTINCT ev.id) AS muestra
+        FROM Lugar l
+        JOIN Lugar_Actividad la ON la.id_lugar = l.id
+        JOIN Actividad act ON act.id_actividad = la.id_actividad
+        JOIN Evento ev ON ev.id = act.id_evento AND ev.estado = 2 ${filtroModalidad}
+        LEFT JOIN (SELECT id_evento, SUM(estado='Confirmada') confirmadas FROM Inscripcion GROUP BY id_evento) insc ON insc.id_evento = ev.id
+        LEFT JOIN (SELECT i.id_evento, COUNT(a.id) asistencias FROM Inscripcion i JOIN Asistencia a ON a.inscripcion=i.id GROUP BY i.id_evento) asist ON asist.id_evento = ev.id
+        WHERE l.id_empresa = :empresaId
+        GROUP BY l.id, l.nombre
+      `, { replacements: repl });
+
+      const data = rows.map(r => {
+        const conf = Number(r.confirmadas) || 0;
+        const asis = Number(r.asistencias) || 0;
+        const tasa = conf > 0 ? Math.round(asis / conf * 100) : null;
+        return {
+          id_lugar: r.id_lugar,
+          nombre: r.nombre,
+          muestra: Number(r.muestra) || 0,
+          tasa_asistencia: tasa,
+          nivel: AnaliticaService.clasificar(tasa)
+        };
+      }).sort((a, b) => (b.tasa_asistencia ?? -1) - (a.tasa_asistencia ?? -1));
+
+      return res.json({ success: true, data });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: 'Error al recomendar ubicaciones' });
+    }
+  }
+
+  async recomendarFranjas(req, res) {
+    try {
+      const { empresaId } = req.params;
+      const { tipo } = req.query;
+      const AnaliticaService = require('../services/analitica.service');
+      const { sequelize } = require('../models');
+
+      let filtroModalidad = '';
+      const repl = { empresaId };
+      if (tipo) {
+        filtroModalidad = 'AND ev.modalidad = :tipo';
+        repl.tipo = tipo;
+      }
+
+      const [rows] = await sequelize.query(`
+        SELECT CASE
+            WHEN HOUR(COALESCE(ev.hora,'12:00:00')) BETWEEN 6 AND 11 THEN 'mañana'
+            WHEN HOUR(COALESCE(ev.hora,'12:00:00')) BETWEEN 12 AND 17 THEN 'tarde'
+            WHEN HOUR(COALESCE(ev.hora,'12:00:00')) BETWEEN 18 AND 23 THEN 'noche'
+            ELSE 'madrugada' END AS franja,
+          COALESCE(SUM(insc.confirmadas),0) AS confirmadas,
+          COALESCE(SUM(asist.asistencias),0) AS asistencias,
+          COUNT(DISTINCT ev.id) AS muestra
+        FROM Evento ev
+        LEFT JOIN (SELECT id_evento, SUM(estado='Confirmada') confirmadas FROM Inscripcion GROUP BY id_evento) insc ON insc.id_evento=ev.id
+        LEFT JOIN (SELECT i.id_evento, COUNT(a.id) asistencias FROM Inscripcion i JOIN Asistencia a ON a.inscripcion=i.id GROUP BY i.id_evento) asist ON asist.id_evento=ev.id
+        WHERE ev.id_empresa = :empresaId AND ev.estado = 2 ${filtroModalidad}
+        GROUP BY franja
+      `, { replacements: repl });
+
+      const data = rows.map(r => {
+        const conf = Number(r.confirmadas) || 0;
+        const asis = Number(r.asistencias) || 0;
+        const tasa = conf > 0 ? Math.round(asis / conf * 100) : null;
+        return {
+          franja: r.franja,
+          muestra: Number(r.muestra) || 0,
+          tasa_asistencia: tasa,
+          nivel: AnaliticaService.clasificar(tasa)
+        };
+      }).sort((a, b) => (b.tasa_asistencia ?? -1) - (a.tasa_asistencia ?? -1));
+
+      return res.json({ success: true, data });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: 'Error al recomendar franjas' });
+    }
+  }
 }
 
 module.exports = new EmpresaController();

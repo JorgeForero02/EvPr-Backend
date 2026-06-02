@@ -21,7 +21,10 @@ class ChatbotController {
 
             const respuesta = await ChatbotService.responder({
                 pregunta: pregunta.trim(),
-                id_evento: id_evento || null
+                id_evento: id_evento || null,
+                rol: req.usuario?.rol || null,
+                pantalla: typeof req.body.pantalla === 'string' ? req.body.pantalla : null,
+                id_usuario: req.usuario?.id || null
             });
 
             return res.json({

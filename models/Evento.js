@@ -102,7 +102,7 @@ const Evento = sequelize.define('Evento', {
     type: DataTypes.TINYINT,
     allowNull: false,
     defaultValue: 0,
-    comment: '0=Borrador, 1=Publicado, 2=Cancelado, 3=Finalizado'
+    comment: '0=Programado, 1=Activo, 2=Finalizado, 3=Cancelado'
   },
   fecha_creacion: {
     type: DataTypes.DATE,

@@ -88,6 +88,10 @@ router.get(
     EmpresaController.estadisticasOcupacion
 );
 
+// RF29/RF30: Recomendaciones de ubicaciones y franjas horarias
+router.get('/:empresaId/recomendaciones/ubicaciones', auth, isGerenteOrAdmin, verificarEmpresaAprobada, EmpresaController.recomendarUbicaciones);
+router.get('/:empresaId/recomendaciones/franjas', auth, isGerenteOrAdmin, verificarEmpresaAprobada, EmpresaController.recomendarFranjas);
+
 // --- RUTAS SOLICITUDES DE ACTUALIZACIÓN ---
 const solicitudActualizacionRouter = require('./solicitudActualizacion.routes');
 router.use('/:id_empresa/solicitudes-actualizacion', solicitudActualizacionRouter);

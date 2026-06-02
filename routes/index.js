@@ -18,6 +18,9 @@ router.use('/notificaciones', require('./notificaciones.routes'));
 router.use('/encuestas', require('./encuesta.routes'));
 router.use('/admin', require('./admin.routes'));
 router.use('/ia', require('./ia.routes'));
+router.use('/ia', require('./recomendacion.routes'));
 router.use('/chatbot', require('./chatbot.routes'));
+router.use('/asistente', require('./asistente.routes'));
+router.use('/ponente', require('./ponente.recomendacion.routes'));
 
 module.exports = router;

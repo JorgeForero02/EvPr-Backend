@@ -292,6 +292,41 @@ class AdminController {
                 ['Tasa de Respuesta Encuestas (%)', tasaEncuestas]
             ];
 
+            const AnaliticaService = require('../services/analitica.service');
+            const [porFranja] = await sequelize.query(`
+                SELECT
+                    CASE
+                        WHEN HOUR(COALESCE(ev.hora, '12:00:00')) BETWEEN 6 AND 11 THEN 'ma\u00F1ana'
+                        WHEN HOUR(COALESCE(ev.hora, '12:00:00')) BETWEEN 12 AND 17 THEN 'tarde'
+                        WHEN HOUR(COALESCE(ev.hora, '12:00:00')) BETWEEN 18 AND 23 THEN 'noche'
+                        ELSE 'madrugada'
+                    END AS franja,
+                    COALESCE(SUM(insc.c), 0) AS confirmadas,
+                    COALESCE(SUM(asist.a), 0) AS asistencias
+                FROM Evento ev
+                LEFT JOIN (
+                    SELECT id_evento, SUM(estado = 'Confirmada') AS c
+                    FROM Inscripcion
+                    GROUP BY id_evento
+                ) insc ON insc.id_evento = ev.id
+                LEFT JOIN (
+                    SELECT i.id_evento, COUNT(a.id) AS a
+                    FROM Inscripcion i
+                    JOIN Asistencia a ON a.inscripcion = i.id
+                    GROUP BY i.id_evento
+                ) asist ON asist.id_evento = ev.id
+                WHERE ev.estado = 2
+                GROUP BY franja
+            `);
+
+            filas.push(['', '']);
+            filas.push(['Franja horaria', 'Nivel asistencia (%)']);
+            for (const f of porFranja) {
+                const conf = Number(f.confirmadas) || 0, asis = Number(f.asistencias) || 0;
+                const tasa = conf > 0 ? Math.round((asis / conf) * 100) : 0;
+                filas.push([f.franja, `${tasa} (${AnaliticaService.clasificar(tasa) || 'sin datos'})`]);
+            }
+
             const csv = filas.map(f => f.join(',')).join('\n');
             res.setHeader('Content-Type', 'text/csv; charset=utf-8');
             res.setHeader('Content-Disposition', 'attachment; filename="dashboard_admin.csv"');
@@ -302,8 +337,61 @@ class AdminController {
         }
     }
 
-    // RF10 — Métricas agregadas por empresa y tipo de evento
+    // RF12 — Proyecciones de demanda y riesgo por modalidad y evento
+    async obtenerProyecciones(req, res) {
+        try {
+            const analitica = require('../services/analitica.service');
+            const { Evento } = require('../models');
+
+            const modalidades = ['Presencial', 'Virtual', 'Híbrida'];
+            const por_tipo = [];
+            for (const tipo of modalidades) {
+                const [demanda, riesgo] = await Promise.all([
+                    analitica.demandaEsperada({ modalidad: tipo }),
+                    analitica.riesgoInasistencia({ modalidad: tipo })
+                ]);
+                por_tipo.push({
+                    tipo,
+                    demanda_esperada: demanda.esperado,
+                    muestra: demanda.muestra,
+                    riesgo: riesgo.riesgo,
+                    nivel_riesgo: riesgo.nivel
+                });
+            }
+
+            const eventos = await Evento.findAll({
+                where: { estado: [0, 1] },
+                attributes: ['id', 'titulo', 'modalidad'],
+                order: [['fecha_inicio', 'ASC']],
+                limit: 50
+            });
+
+            // La proyección por evento se deriva del promedio histórico de su modalidad
+            // (ya calculado en por_tipo), evitando una query por evento.
+            const proyeccionPorModalidad = new Map(por_tipo.map(t => [t.tipo, t]));
+            const por_evento = eventos.map(ev => {
+                const proy = proyeccionPorModalidad.get(ev.modalidad) || {};
+                return {
+                    id_evento: ev.id,
+                    titulo: ev.titulo,
+                    modalidad: ev.modalidad,
+                    demanda_esperada: proy.demanda_esperada ?? null,
+                    riesgo: proy.riesgo ?? null,
+                    nivel_riesgo: proy.nivel_riesgo ?? null,
+                    muestra: proy.muestra ?? 0
+                };
+            });
+
+            return res.json({ success: true, data: { por_tipo, por_evento } });
+        } catch (error) {
+            console.error('Error al obtener proyecciones:', error);
+            return res.status(500).json({ success: false, message: 'Error al obtener proyecciones' });
+        }
+    }
+
+    // RF10/RF13 — Métricas agregadas por empresa y tipo de evento
     async obtenerMetricasAgregadas(req, res) {
+        const AnaliticaService = require('../services/analitica.service');
         try {
             const [porEmpresa] = await sequelize.query(`
                 SELECT
@@ -385,6 +473,33 @@ class AdminController {
                 ORDER BY ev.modalidad
             `);
 
+            const [porFranja] = await sequelize.query(`
+                SELECT
+                    CASE
+                        WHEN HOUR(COALESCE(ev.hora, '12:00:00')) BETWEEN 6 AND 11 THEN 'mañana'
+                        WHEN HOUR(COALESCE(ev.hora, '12:00:00')) BETWEEN 12 AND 17 THEN 'tarde'
+                        WHEN HOUR(COALESCE(ev.hora, '12:00:00')) BETWEEN 18 AND 23 THEN 'noche'
+                        ELSE 'madrugada'
+                    END AS franja,
+                    COUNT(DISTINCT ev.id) AS total_eventos,
+                    COALESCE(SUM(insc.inscripciones_confirmadas), 0) AS inscripciones_confirmadas,
+                    COALESCE(SUM(asist.total_asistencias), 0) AS total_asistencias
+                FROM Evento ev
+                LEFT JOIN (
+                    SELECT id_evento, SUM(estado = 'Confirmada') AS inscripciones_confirmadas
+                    FROM Inscripcion
+                    GROUP BY id_evento
+                ) insc ON insc.id_evento = ev.id
+                LEFT JOIN (
+                    SELECT i.id_evento, COUNT(a.id) AS total_asistencias
+                    FROM Inscripcion i
+                    JOIN Asistencia a ON a.inscripcion = i.id
+                    GROUP BY i.id_evento
+                ) asist ON asist.id_evento = ev.id
+                WHERE ev.estado = 2
+                GROUP BY franja
+            `);
+
             const toNum = v => Number(v) || 0;
             const calcTasa = (num, den) => den > 0 ? Math.round((num / den) * 100) : 0;
 
@@ -394,6 +509,7 @@ class AdminController {
                 inscripciones_confirmadas:   toNum(row.inscripciones_confirmadas),
                 total_asistencias:           toNum(row.total_asistencias),
                 tasa_asistencia:             calcTasa(toNum(row.total_asistencias), toNum(row.inscripciones_confirmadas)),
+                nivel_asistencia:            AnaliticaService.clasificar(calcTasa(toNum(row.total_asistencias), toNum(row.inscripciones_confirmadas))),
                 encuestas_enviadas:          toNum(row.encuestas_enviadas),
                 encuestas_respondidas:       toNum(row.encuestas_respondidas),
                 tasa_respuesta_encuestas:    calcTasa(toNum(row.encuestas_respondidas), toNum(row.encuestas_enviadas)),
@@ -413,7 +529,18 @@ class AdminController {
                     por_modalidad: porModalidad.map(row => ({
                         modalidad: row.modalidad,
                         ...mapRow(row)
-                    }))
+                    })),
+                    por_franja: porFranja.map(row => {
+                        const tasa = calcTasa(toNum(row.total_asistencias), toNum(row.inscripciones_confirmadas));
+                        return {
+                            franja: row.franja,
+                            total_eventos: toNum(row.total_eventos),
+                            inscripciones_confirmadas: toNum(row.inscripciones_confirmadas),
+                            total_asistencias: toNum(row.total_asistencias),
+                            tasa_asistencia: tasa,
+                            nivel_asistencia: AnaliticaService.clasificar(tasa)
+                        };
+                    })
                 }
             });
         } catch (error) {

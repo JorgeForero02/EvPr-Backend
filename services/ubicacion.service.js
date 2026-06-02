@@ -116,6 +116,7 @@ class UbicacionService {
     }
 
     async obtenerStats(empresaId) {
+        const sequelize = require('../config/database');
         const empresa = await Empresa.findByPk(empresaId);
         if (!empresa) return { exito: false, mensaje: MENSAJES.EMPRESA_NO_ENCONTRADA };
 
@@ -145,6 +146,18 @@ class UbicacionService {
             : [];
         const actividadesProximasSet = new Set(actividadesProximas.map(a => a.id_actividad));
 
+        // RF28: count distinct events per sala
+        const [eventosPorLugar] = lugarIds.length > 0
+            ? await sequelize.query(`
+                SELECT la.id_lugar, COUNT(DISTINCT act.id_evento) AS total_eventos
+                FROM Lugar_Actividad la
+                JOIN Actividad act ON act.id_actividad = la.id_actividad
+                WHERE la.id_lugar IN (:lugarIds)
+                GROUP BY la.id_lugar
+              `, { replacements: { lugarIds } })
+            : [[]];
+        const eventosMap = new Map(eventosPorLugar.map(r => [r.id_lugar, Number(r.total_eventos) || 0]));
+
         const lugarMap = new Map();
         for (const l of lugares) {
             const asig = asignaciones.filter(a => a.id_lugar === l.id);
@@ -155,7 +168,8 @@ class UbicacionService {
                 activo: l.activo,
                 id_ubicacion: l.id_ubicacion,
                 total_actividades_historicas: asig.length,
-                actividades_proximas: asig.filter(a => actividadesProximasSet.has(a.id_actividad)).length
+                actividades_proximas: asig.filter(a => actividadesProximasSet.has(a.id_actividad)).length,
+                total_eventos: eventosMap.get(l.id) || 0,
             });
         }
 
