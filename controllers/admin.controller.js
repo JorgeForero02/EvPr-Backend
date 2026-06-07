@@ -248,6 +248,12 @@ class AdminController {
         }
     }
 
+    /**
+     * @deprecated Reemplazado por el Reporte Ejecutivo del frontend
+     * (src/pages/admin/reportes/), que genera PDF/Excel/CSV con escapado correcto.
+     * Construye el CSV con join(',') sin escapar comas/comillas (frágil). Conservado
+     * por compatibilidad; eliminar junto con la ruta /admin/dashboard/exportar-csv.
+     */
     async exportarDashboardCSV(req, res) {
         try {
             const [

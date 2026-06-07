@@ -324,59 +324,62 @@ class EmpresaService {
     }
 
     async obtenerEstadisticasOcupacion(empresaId) {
-        const { Lugar, LugarActividad, Actividad, Inscripcion } = require('../models');
+        const { Lugar } = require('../models');
 
         const empresa = await Empresa.findByPk(empresaId);
         if (!empresa) {
             return { exito: false, mensaje: 'Empresa no encontrada', codigoEstado: 404 };
         }
 
+        // Todas las salas de la empresa (para listar también las sin histórico)
         const lugares = await Lugar.findAll({
             where: { id_empresa: empresaId },
             attributes: ['id', 'nombre', 'capacidad']
         });
 
-        const resultado = [];
+        // Ocupación histórica: solo eventos FINALIZADOS (estado=2). Una sola query agregada.
+        // Subconsulta -> ocupación por (sala, evento finalizado); fuera -> promedio por sala.
+        const [filas] = await sequelize.query(`
+            SELECT sub.id_lugar AS id,
+                   COUNT(*) AS eventos_realizados,
+                   ROUND(AVG(sub.ocupacion), 1) AS ocupacion_promedio
+            FROM (
+                SELECT l.id AS id_lugar,
+                       LEAST(100, ROUND(COALESCE(insc.confirmadas, 0) / l.capacidad * 100)) AS ocupacion
+                FROM Lugar l
+                JOIN Lugar_Actividad la ON la.id_lugar = l.id
+                JOIN Actividad act ON act.id_actividad = la.id_actividad
+                JOIN Evento ev ON ev.id = act.id_evento AND ev.estado = 2
+                LEFT JOIN (
+                    SELECT id_evento, SUM(estado = 'Confirmada') AS confirmadas
+                    FROM Inscripcion GROUP BY id_evento
+                ) insc ON insc.id_evento = ev.id
+                WHERE l.id_empresa = :empresaId AND l.capacidad > 0
+                GROUP BY l.id, ev.id, insc.confirmadas
+            ) sub
+            GROUP BY sub.id_lugar
+        `, { replacements: { empresaId } });
 
-        for (const lugar of lugares) {
-            const asignaciones = await LugarActividad.findAll({
-                where: { id_lugar: lugar.id },
-                include: [{
-                    model: Actividad,
-                    as: 'actividad',
-                    attributes: ['id_actividad', 'id_evento']
-                }]
-            });
+        const statsMap = new Map(filas.map(f => [f.id, {
+            eventos_realizados: Number(f.eventos_realizados) || 0,
+            ocupacion_promedio: Number(f.ocupacion_promedio) || 0
+        }]));
 
-            const eventoIds = [...new Set(asignaciones
-                .filter(a => a.actividad)
-                .map(a => a.actividad.id_evento))];
-
-            let ocupacionesEvento = [];
-            for (const eventoId of eventoIds) {
-                const inscritos = await Inscripcion.count({
-                    where: { id_evento: eventoId, estado: 'Confirmada' }
-                });
-                if (lugar.capacidad && lugar.capacidad > 0) {
-                    ocupacionesEvento.push(Math.min(100, Math.round((inscritos / lugar.capacidad) * 100)));
-                }
-            }
-
-            const ocupacionPromedio = ocupacionesEvento.length > 0
-                ? Math.round(ocupacionesEvento.reduce((a, b) => a + b, 0) / ocupacionesEvento.length)
-                : 0;
-
-            resultado.push({
+        const resultado = lugares.map(lugar => {
+            const s = statsMap.get(lugar.id);
+            return {
                 id: lugar.id,
                 nombre: lugar.nombre,
                 capacidad: lugar.capacidad,
-                eventos_realizados: eventoIds.length,
-                ocupacion_promedio: ocupacionPromedio
-            });
-        }
+                eventos_realizados: s ? s.eventos_realizados : 0,
+                ocupacion_promedio: s ? s.ocupacion_promedio : 0
+            };
+        });
 
-        const ocupacionGlobal = resultado.length > 0
-            ? Math.round(resultado.reduce((a, b) => a + b.ocupacion_promedio, 0) / resultado.length)
+        // Global = promedio de las salas con histórico (evita diluir con salas sin eventos)
+        const conHistorico = resultado.filter(r => r.eventos_realizados > 0);
+        const ocupacionGlobal = conHistorico.length > 0
+            ? Math.round((conHistorico.reduce((a, b) => a + b.ocupacion_promedio, 0) / conHistorico.length) * 10) / 10
             : 0;
 
         return {
